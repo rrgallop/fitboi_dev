@@ -21,16 +21,19 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
+    #filter out irrelevant messages
     if message.author == client.user:
         return
     if str(message.channel) != "fitness":
         return
 
+    #start weekly scheduler
     global BOT_RUNNING
     if not BOT_RUNNING:
         client.loop.create_task(weekly_tracker(message))
     BOT_RUNNING = True
 
+    #process relevant messages
     if "!checkin" in message.content.lower():
         author_name = message.author.name
         count = 0
