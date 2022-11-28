@@ -7,6 +7,8 @@ name = "pypi"
 python-dotenv = "*"
 "discord.py" = "*"
 asyncio = "*"
+python-dateutil = "*"
+pytz = "*"
 
 [dev-packages]
 
