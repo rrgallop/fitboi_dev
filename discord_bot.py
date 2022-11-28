@@ -1,3 +1,4 @@
+import random
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta, MO
 import calendar
@@ -69,8 +70,9 @@ async def on_message(message):
         
         fire_string = ''.join([':fire:' for _ in range(count)])
         workouts_or_workout = "workouts" if count > 1 else "workout"
-        message_to_channel = f"Hey, nice workout, {local_server_nickname}! \n"
-        message_to_channel += f"That's {count} {workouts_or_workout} since {calendar.day_name[last_monday.weekday()]}, {last_monday.strftime('%Y-%m-%d')}! \n" 
+        message_part_one = get_message_part_one(local_server_nickname)
+        message_to_channel = message_part_one + \
+            f"That's {count} {workouts_or_workout} since {calendar.day_name[last_monday.weekday()]}, {last_monday.strftime('%m-%d')}! \n" 
         message_to_channel += fire_string
         await message.channel.send(message_to_channel)
 
@@ -161,6 +163,24 @@ def construct_leaderboard(workout_dict):
         return_string += workout_result
 
     return return_string
+
+
+def get_message_part_one(local_server_nickname):
+    part_one_options = [
+        f"Hey, nice workout, {local_server_nickname}!\n",
+        f"Looking great, {local_server_nickname}! :star_struck:\n",
+        f"You're on fire, {local_server_nickname}! :heart_on_fire:\n",
+        f"So proud of you, {local_server_nickname}! :muscle:\n",
+        f"Another one in the books, {local_server_nickname}! :white_check_mark:\n",
+        f"So workout! Much strong! :dog:\n",
+        f"You're a rockstar, {local_server_nickname}! :sunglasses:\n",
+        f":clap: Let's hear it for {local_server_nickname}! :clap:\n",
+        f"Doing great, {local_server_nickname}! Keep it up!\n",
+        f"Great workout, {local_server_nickname}! I'm so inspired!\n"
+    ]
+    part_one = random.choice(part_one_options)
+
+    return part_one
 
 # run the bot
 with open("bot_token", "r") as file:
