@@ -43,8 +43,9 @@ async def on_message(message):
 
     #process relevant messages
     if "!checkin" in message.content.lower():
-        # get the user's nickname on the local server for display 
+        # we need the local server nickname for display purposes
         local_server_nickname = await get_local_server_nickname(message, client)
+        
         # we still need to know the user's universal discord name to easily count their checkins
         universal_discord_name = message.author.name
 
@@ -132,8 +133,8 @@ async def get_tracker_information(client, message, input_date):
         # usernames dictionary is used to map the universal discord name to the local server nickname
         # so we can display things using names that people are expecting to see :)
         if m.author.name not in usernames:
-            local_server_nickname = await get_local_server_nickname(message, client)
-            usernames[m.author.name] = local_server_nickname
+            local_server_nickname = await get_local_server_nickname(m, client)
+            usernames[m.author.name] = local_server_nickname if local_server_nickname else m.author.name
         if "!checkin" in m.content.lower():
             if usernames[m.author.name] in workouts:
                 workouts[usernames[m.author.name]] += 1
