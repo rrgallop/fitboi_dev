@@ -1,8 +1,0 @@
-{
-    “name”: “FitBoi Fitness Tracker”,
-    “version”: “1.0.0”,
-    “description”: “FitBoi”,
-    “main”: “bot.js”,
-    “author”: “Ryan Gallop”,
-    “dependencies”: {}
-}
