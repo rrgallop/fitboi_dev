@@ -26,13 +26,6 @@ async def on_message(message):
         return
     if str(message.channel) != "fitness":
         return
-    guild_id = message.guild.id
-    member_id = message.author.id
-    print(guild_id)
-    print(member_id)
-    guild = await client.fetch_guild(guild_id)
-    member_name = await guild.fetch_member(member_id)
-    print(member_name.nick)
 
     #start weekly scheduler
     global BOT_RUNNING
@@ -42,7 +35,10 @@ async def on_message(message):
 
     #process relevant messages
     if "!checkin" in message.content.lower():
-        author_name = message.author.name
+        guild_id = message.guild.id
+        member_id = message.author.id
+        guild = await client.fetch_guild(guild_id)
+        member_name = await guild.fetch_member(member_id)
         count = 0
         today = datetime.now()
         today = today.replace(hour=0, minute=0, second=0)
