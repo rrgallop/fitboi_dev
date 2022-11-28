@@ -23,7 +23,9 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return
-    
+    if str(message.channel) != "fitness":
+        return
+
     global BOT_RUNNING
     if not BOT_RUNNING:
         client.loop.create_task(weekly_tracker(message))
