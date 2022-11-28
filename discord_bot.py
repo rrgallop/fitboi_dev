@@ -25,6 +25,13 @@ async def on_message(message):
         return
     if str(message.channel) != "fitness":
         return
+    guild_id = message.guild.id
+    member_id = message.author.id
+    print(guild_id)
+    print(member_id)
+    guild = await client.fetch_guild(guild_id)
+    member_name = await guild.fetch_member(member_id)
+    print(member_name.nick)
 
     global BOT_RUNNING
     if not BOT_RUNNING:
@@ -63,7 +70,7 @@ async def on_message(message):
 
 async def weekly_tracker(message):
     today = datetime.now()
-    next_monday = est.localize(today + relativedelta(weekday=MO(+1)))
+    next_monday = est.localize(today + relativedelta(weekday=MO(+2)))
 
     while True:
         workouts = {}
