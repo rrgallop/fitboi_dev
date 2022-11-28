@@ -45,8 +45,9 @@ async def on_message(message):
     if "!checkin" in message.content.lower():
         # we need the local server nickname for display purposes
         local_server_nickname = await get_local_server_nickname(message, client)
-        
-        # we still need to know the user's universal discord name to easily count their checkins
+        # if the user doesn't have a nickname, we treat the universal discord name as the nickname
+        local_server_nickname = message.author.name if None else local_server_nickname
+        # we need to know the user's universal discord name to easily count their checkins
         universal_discord_name = message.author.name
 
         count = 0
