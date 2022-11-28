@@ -51,9 +51,10 @@ async def on_message(message):
         
         fire_string = ''.join([':fire:' for _ in range(count)])
         workouts_or_workout = "workouts" if count > 1 else "workout"
-
-        await message.channel.send(f"Hey, nice workout, {author_name}!")
-        await message.channel.send(f"That's {count} {workouts_or_workout} since {calendar.day_name[last_monday.weekday()]}, {last_monday.strftime('%Y-%m-%d')}! " + fire_string)
+        message_to_channel = f"Hey, nice workout, {author_name}! \n"
+        message_to_channel += "That's {count} {workouts_or_workout} since {calendar.day_name[last_monday.weekday()]}, {last_monday.strftime('%Y-%m-%d')}! \n" 
+        message_to_channel += fire_string
+        await message.channel.send(message_to_channel)
 
     if message.content == "!tracker":
         today = datetime.now() + timedelta(days=7)
