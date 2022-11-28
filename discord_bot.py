@@ -35,10 +35,11 @@ async def on_message(message):
 
     #process relevant messages
     if "!checkin" in message.content.lower():
-        guild_id = message.guild.id
-        member_id = message.author.id
-        guild = await client.fetch_guild(guild_id)
-        member_name = await guild.fetch_member(member_id)
+        # get the user's nickname on the local server for display 
+        local_server_nickname = await get_local_server_nickname(message, client)
+        # we still need to know the user's universal discord name to easily count their checkins
+        universal_discord_name = message.author.name
+
         count = 0
         today = datetime.now()
         today = today.replace(hour=0, minute=0, second=0)
@@ -47,14 +48,15 @@ async def on_message(message):
             until_date = today + relativedelta(weekday=MO(+2)) - timedelta(seconds=1)
         else:
             until_date = today + relativedelta(weekday=MO(+1)) - timedelta(seconds=1)
-        print(f"Counting checkings for {author_name} between dates {last_monday} and {until_date}")
+            
+        print(f"Counting checkings for {universal_discord_name} between dates {last_monday} and {until_date}")
         async for message in message.channel.history(after=last_monday, before=until_date, limit=None):
-            if '!checkin' in message.content.lower() and message.created_at >= last_monday and message.author.name == author_name:
+            if '!checkin' in message.content.lower() and message.created_at >= last_monday and message.author.name == universal_discord_name:
                 count += 1
         
         fire_string = ''.join([':fire:' for _ in range(count)])
         workouts_or_workout = "workouts" if count > 1 else "workout"
-        message_to_channel = f"Hey, nice workout, {author_name}! \n"
+        message_to_channel = f"Hey, nice workout, {local_server_nickname}! \n"
         message_to_channel += f"That's {count} {workouts_or_workout} since {calendar.day_name[last_monday.weekday()]}, {last_monday.strftime('%Y-%m-%d')}! \n" 
         message_to_channel += fire_string
         await message.channel.send(message_to_channel)
@@ -68,10 +70,20 @@ async def on_message(message):
         await message.channel.send(message_to_channel)
 
 
+async def get_local_server_nickname(message, client):
+    member_id = message.author.id
+    guild_id = message.guild.id
+    guild = await client.fetch_guild(guild_id)
+    guild_member = await guild.fetch_member(member_id)
+    local_server_name = guild_member.nick
+
+    return local_server_name
+
+
 async def weekly_tracker(message):
     today = datetime.now()
     next_monday = est.localize(today + relativedelta(weekday=MO(+2)))
-
+    print("Weekly tracker running!")
     while True:
         workouts = {}
         today = datetime.now()
