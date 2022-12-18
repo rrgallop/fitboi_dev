@@ -14,12 +14,29 @@ BOT_RUNNING = False
 load_dotenv()
 client = discord.Client(intents=discord.Intents.all())
 
+# only run the bot in these channels
+active_channels = set()
+
 
 @client.event
 async def on_ready():
     print(f'{client.user} has connected to Discord!')
     for guild in client.guilds:
         print(f"I am a member of {guild.name}:{guild.id}")
+        for channel in guild.text_channels:
+            if channel.name == "fitness":
+                # for now, just run the bot in channels named "fitness"
+                active_channels.add(channel.id)
+
+    # for now, let's just hardcode the channel that we want the weekly tracker to run in
+    # in the future, it would be cool to instantiate one instance of the tracker per channel id in a list of channels,
+    # or a config file or something like that, but for now, we only need one
+    fitness_channel_id = 995830247675138069
+    fitness_channel = client.get_channel(fitness_channel_id)
+
+    # start weekly scheduler
+    client.loop.create_task(weekly_tracker(fitness_channel))
+    global BOT_RUNNING; BOT_RUNNING = True
 
 
 @client.event
@@ -41,6 +58,8 @@ async def on_message(message):
     if not BOT_RUNNING:
         client.loop.create_task(weekly_tracker(message))
     BOT_RUNNING = True
+
+    # get message channel
 
     #process relevant messages
     if "!checkin" in message.content.lower():
@@ -98,14 +117,14 @@ async def get_local_server_nickname(message, client):
     return local_server_name
 
 
-async def weekly_tracker(message):
+async def weekly_tracker(channel):
     """
     Invokes the tracker automatically once a week on Monday morning.
     Will display all the checkins from all the users that were seen in the previous week.
     """
     today = datetime.now()
     next_monday = est.localize(today + relativedelta(weekday=MO(+2)))
-    print("Weekly tracker running!")
+    print(f"Weekly tracker running on channel {channel.name}! Next Monday is {next_monday}")
     while True:
         workouts = {}
         today = datetime.now()
@@ -118,11 +137,11 @@ async def weekly_tracker(message):
             message_to_channel += workout_results
             message_to_channel += "\nKeep up the great work, everyone!\n:fire::fire::fire::fire::fire::fire::fire:"
             print(message_to_channel)
-            await message.channel.send(message_to_channel)
+            await channel.send(message_to_channel)
         await asyncio.sleep(3600)
     
 
-async def get_tracker_information(client, message, input_date):
+async def get_tracker_information(client, channel, input_date):
     """
     Populates a dictionary called "workouts".
     Tracks all the checkins we've seen from every user over the past week.
@@ -135,7 +154,7 @@ async def get_tracker_information(client, message, input_date):
     after_date = input_date + relativedelta(weekday=MO(-2))
     until_date = input_date + relativedelta(weekday=MO(+1)) - timedelta(seconds=1)
     print(f"Getting !checkins from between {after_date} and {until_date}")
-    async for m in message.channel.history(after=after_date, before=until_date, limit=None):
+    async for m in channel.history(after=after_date, before=until_date, limit=None):
         # usernames dictionary is used to map the universal discord name to the local server nickname
         # so we can display things using names that people are expecting to see :)
         if m.author.name not in usernames:
