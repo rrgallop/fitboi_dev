@@ -11,6 +11,8 @@ from collections import Counter
 est = pytz.timezone("US/Eastern")
 BOT_RUNNING = False
 
+active_channels = set()
+
 load_dotenv()
 client = discord.Client(intents=discord.Intents.all())
 
@@ -19,7 +21,22 @@ client = discord.Client(intents=discord.Intents.all())
 async def on_ready():
     print(f'{client.user} has connected to Discord!')
     for guild in client.guilds:
-        print(f"I am a member of {guild.name}:{guild.id}")
+        for c in guild.text_channels:
+            if c.name == "fitness" and c.guild.name == "Nerds 2.0":
+                fitness_channel = c
+                active_channels.add(fitness_channel)
+            if c.name == "fitness" and c.guild.name == "r3inventing's server":
+                test_channel = c
+                active_channels.add(test_channel)
+    
+    for channel in active_channels:
+        print(f"watching {channel.name} in guild {channel.guild}")
+
+    try:
+        client.loop.create_task(weekly_tracker(client, fitness_channel))
+        global BOT_RUNNING; BOT_RUNNING = True
+    except Exception as e:
+        raise Exception(f"Failed to run the weekly tracker! {e}") from e
 
 
 @client.event
@@ -27,20 +44,20 @@ async def on_message(message):
     """
     Main driver function. Gets invoked whenever the bot sees a message in its watched channels.
     Will filter out messages that it deems not revelant.
-    (For now, the bot only operates in channels that are named "fitness")
+    Filters based on the active_channels set which is populated at bot runtime
     """
 
     #filter out irrelevant messages
     if message.author == client.user:
         return
-    if str(message.channel) != "fitness":
+    if message.channel not in active_channels:
         return
 
-    #start weekly scheduler
+    #start weekly scheduler, if needed
     global BOT_RUNNING
     if not BOT_RUNNING:
-        client.loop.create_task(weekly_tracker(message))
-    BOT_RUNNING = True
+        client.loop.create_task(weekly_tracker(client, message.channel))
+        BOT_RUNNING = True
 
     #process relevant messages
     if "!checkin" in message.content.lower():
@@ -78,7 +95,7 @@ async def on_message(message):
 
     if message.content == "!tracker":
         today = datetime.now() + timedelta(days=7)
-        workouts = await get_tracker_information(client, message, today)
+        workouts = await get_tracker_information(client, message.channel, today)
         leaderboard = construct_leaderboard(workouts)
         message_to_channel = "Here's how we're doing so far this week! :thinking:\n\n" + leaderboard + "\nGreat work everyone! :heart:"
         print(message_to_channel)
@@ -98,31 +115,33 @@ async def get_local_server_nickname(message, client):
     return local_server_name
 
 
-async def weekly_tracker(message):
+async def weekly_tracker(client, channel):
     """
     Invokes the tracker automatically once a week on Monday morning.
     Will display all the checkins from all the users that were seen in the previous week.
     """
     today = datetime.now()
-    next_monday = est.localize(today + relativedelta(weekday=MO(+2)))
-    print("Weekly tracker running!")
+    next_monday = est.localize(today + relativedelta(weekday=MO(+1)))
+    if today.date() == next_monday.date():
+        next_monday = est.localize(today + relativedelta(weekday=MO(+2)))
+    print(f"Weekly tracker running on channel {channel.guild}:{channel.name}! Next Monday is {next_monday.date()}")
     while True:
         workouts = {}
         today = datetime.now()
         if today.date() == next_monday.date():
             next_monday = est.localize(today + relativedelta(weekday=MO(+2)))
             print(f"Next time we check the leaderboard automatically should be {next_monday.date()}")
-            workouts = await get_tracker_information(message, today)
+            workouts = await get_tracker_information(client, channel, today)
             message_to_channel = f":fire::fire::fire::fire::fire::fire::fire:\nHey, it's a new week! Let's see how we did!\n\nHere are the results from last week: \n\n"
             workout_results = construct_leaderboard(workouts)
             message_to_channel += workout_results
             message_to_channel += "\nKeep up the great work, everyone!\n:fire::fire::fire::fire::fire::fire::fire:"
             print(message_to_channel)
-            await message.channel.send(message_to_channel)
-        await asyncio.sleep(3600)
+            await channel.send(message_to_channel)
+        await asyncio.sleep(3600) # check time every 3 hours
     
 
-async def get_tracker_information(client, message, input_date):
+async def get_tracker_information(client, channel, input_date):
     """
     Populates a dictionary called "workouts".
     Tracks all the checkins we've seen from every user over the past week.
@@ -135,7 +154,7 @@ async def get_tracker_information(client, message, input_date):
     after_date = input_date + relativedelta(weekday=MO(-2))
     until_date = input_date + relativedelta(weekday=MO(+1)) - timedelta(seconds=1)
     print(f"Getting !checkins from between {after_date} and {until_date}")
-    async for m in message.channel.history(after=after_date, before=until_date, limit=None):
+    async for m in channel.history(after=after_date, before=until_date, limit=None):
         # usernames dictionary is used to map the universal discord name to the local server nickname
         # so we can display things using names that people are expecting to see :)
         if m.author.name not in usernames:
@@ -176,7 +195,16 @@ def get_message_part_one(local_server_nickname):
         f"You're a rockstar, {local_server_nickname}! :sunglasses:\n",
         f":clap: Let's hear it for {local_server_nickname}! :clap:\n",
         f"Doing great, {local_server_nickname}! Keep it up!\n",
-        f"Great workout, {local_server_nickname}! I'm so inspired!\n"
+        f"Great workout, {local_server_nickname}! I'm so inspired!\n",
+        f"Killing it, {local_server_nickname}!\n",
+        f"So happy to see you, {local_server_nickname}! :heart:\n",
+        f"What a machine! :mechanical_arm:\n",
+        f"Woohoo! Great work, {local_server_nickname}:bangbang:\n",
+        f"Look at you, working on you! :heart_eyes:\n",
+        f"Getting fit as a fiddle, {local_server_nickname}! :violin:\n",
+        f"You inspire me, {local_server_nickname}! :star_struck:\n",
+        f"You're a star, {local_server_nickname}! :stars:\n",
+        f"You're doing great things, {local_server_nickname}! :metal:\n"
     ]
     part_one = random.choice(part_one_options)
 
