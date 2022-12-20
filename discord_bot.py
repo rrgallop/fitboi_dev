@@ -11,6 +11,8 @@ from collections import Counter
 est = pytz.timezone("US/Eastern")
 BOT_RUNNING = False
 
+active_channels = set()
+
 load_dotenv()
 client = discord.Client(intents=discord.Intents.all())
 
@@ -19,13 +21,17 @@ client = discord.Client(intents=discord.Intents.all())
 async def on_ready():
     print(f'{client.user} has connected to Discord!')
     for guild in client.guilds:
-        print(f"I am a member of {guild.name}:{guild.id}")
-
-    # hardcode fitness channel for now
-    # nerds - 995830247675138069
-    # test server - 1046848327238569984
-    fitness_channel = client.get_channel(995830247675138069)
+        for c in guild.text_channels:
+            if c.name == "fitness" and c.guild.name == "Nerds 2.0":
+                fitness_channel = c
+                active_channels.add(fitness_channel)
+            if c.name == "fitness" and c.guild.name == "r3inventing's server":
+                test_channel = c
+                active_channels.add(test_channel)
     
+    for channel in active_channels:
+        print(f"watching {channel.name} in guild {channel.guild}")
+
     try:
         client.loop.create_task(weekly_tracker(client, fitness_channel))
         global BOT_RUNNING; BOT_RUNNING = True
@@ -38,16 +44,16 @@ async def on_message(message):
     """
     Main driver function. Gets invoked whenever the bot sees a message in its watched channels.
     Will filter out messages that it deems not revelant.
-    (For now, the bot only operates in channels that are named "fitness")
+    Filters based on the active_channels set which is populated at bot runtime
     """
 
     #filter out irrelevant messages
     if message.author == client.user:
         return
-    if str(message.channel) != "fitness":
+    if message.channel not in active_channels:
         return
 
-    #start weekly scheduler
+    #start weekly scheduler, if needed
     global BOT_RUNNING
     if not BOT_RUNNING:
         client.loop.create_task(weekly_tracker(client, message.channel))
@@ -132,7 +138,7 @@ async def weekly_tracker(client, channel):
             message_to_channel += "\nKeep up the great work, everyone!\n:fire::fire::fire::fire::fire::fire::fire:"
             print(message_to_channel)
             await channel.send(message_to_channel)
-        await asyncio.sleep(3600)
+        await asyncio.sleep(3600) # check time every 3 hours
     
 
 async def get_tracker_information(client, channel, input_date):
@@ -192,8 +198,13 @@ def get_message_part_one(local_server_nickname):
         f"Great workout, {local_server_nickname}! I'm so inspired!\n",
         f"Killing it, {local_server_nickname}!\n",
         f"So happy to see you, {local_server_nickname}! :heart:\n",
-        f"You're a machine, {local_server_nickname}! :mechanical_arm:\n",
-        f"Woohoo! Great work, {local_server_nickname}:bangbang:\n"
+        f"What a machine! :mechanical_arm:\n",
+        f"Woohoo! Great work, {local_server_nickname}:bangbang:\n",
+        f"Look at you, working on you! :heart_eyes:\n",
+        f"Getting fit as a fiddle, {local_server_nickname}! :violin:\n",
+        f"You inspire me, {local_server_nickname}! :star_struck:\n",
+        f"You're a star, {local_server_nickname}! :stars:\n",
+        f"You're doing great things, {local_server_nickname}! :metal:\n"
     ]
     part_one = random.choice(part_one_options)
 
