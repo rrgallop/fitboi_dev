@@ -207,7 +207,7 @@ def get_message_part_one(local_server_nickname):
         f"You're doing great things, {local_server_nickname}! :metal:\n",
         f"Roses are red, gains are sweet, keep crushing it, {local_server_nickname}! :rose:\n",
         f"Your future self is high-fiving you right now, {local_server_nickname}! :raised_hands:\n",
-        f"{local_server_nickname} just leveled up! +5 to Strength! :video_game:",
+        f"{local_server_nickname} just leveled up! +5 to Strength! :video_game:\n",
     ]
     part_one = random.choice(part_one_options)
 
