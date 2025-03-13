@@ -22,7 +22,7 @@ async def on_ready():
     print(f'{client.user} has connected to Discord!')
     for guild in client.guilds:
         for c in guild.text_channels:
-            if c.name == "🏋︱fitness" and c.guild.name == "Nerds 2.0":
+            if "fitness" in c.name and c.guild.name == "The Nerds":
                 fitness_channel = c
                 active_channels.add(fitness_channel)
             if c.name == "fitness" and c.guild.name == "r3inventing's server":
@@ -204,7 +204,10 @@ def get_message_part_one(local_server_nickname):
         f"Getting fit as a fiddle, {local_server_nickname}! :violin:\n",
         f"You inspire me, {local_server_nickname}! :star_struck:\n",
         f"You're a star, {local_server_nickname}! :stars:\n",
-        f"You're doing great things, {local_server_nickname}! :metal:\n"
+        f"You're doing great things, {local_server_nickname}! :metal:\n",
+        f"Roses are red, gains are sweet, keep crushing it, {local_server_nickname}! :rose:\n",
+        f"Your future self is high-fiving you right now, {local_server_nickname}! :raised_hands:\n",
+        f"{local_server_nickname} just leveled up! +5 to Strength! :video_game:",
     ]
     part_one = random.choice(part_one_options)
 
