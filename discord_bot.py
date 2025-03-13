@@ -64,7 +64,7 @@ async def on_message(message):
 
     #process relevant messages
     if "!checkin" in message.content.lower():
-        # we need the local server nickname for display purposes
+        # we need the local server nickname for display purposes, if it exists
         local_server_nickname = await get_local_server_nickname(message, client)
         
         # we need to know the user's universal discord name to easily count their checkins
@@ -153,9 +153,10 @@ async def get_local_server_nickname(message, client):
     guild_id = message.guild.id
     guild = await client.fetch_guild(guild_id)
     guild_member = await guild.fetch_member(member_id)
+    global_discord_display_name = message.author.global_name
     local_server_name = guild_member.nick
 
-    return local_server_name
+    return local_server_name if local_server_name else global_discord_display_name
 
 
 async def weekly_tracker(client, channel):
