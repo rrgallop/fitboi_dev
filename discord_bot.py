@@ -22,7 +22,7 @@ async def on_ready():
     print(f'{client.user} has connected to Discord!')
     for guild in client.guilds:
         for c in guild.text_channels:
-            if c.name == "🏋︱fitness" and c.guild.name == "Nerds 2.0":
+            if c.name == "🏋︱fitness" and c.guild.name == "The Nerds":
                 fitness_channel = c
                 active_channels.add(fitness_channel)
             if c.name == "fitness" and c.guild.name == "r3inventing's server":
@@ -33,8 +33,11 @@ async def on_ready():
         print(f"watching {channel.name} in guild {channel.guild}")
 
     try:
-        client.loop.create_task(weekly_tracker(client, fitness_channel))
-        global BOT_RUNNING; BOT_RUNNING = True
+        global BOT_RUNNING
+        if not BOT_RUNNING:
+            print(f"- {fitness_channel} -")
+            client.loop.create_task(weekly_tracker(client, fitness_channel))
+            BOT_RUNNING = True
     except Exception as e:
         raise Exception(f"Failed to run the weekly tracker! {e}") from e
 
@@ -98,8 +101,48 @@ async def on_message(message):
         workouts = await get_tracker_information(client, message.channel, today)
         leaderboard = construct_leaderboard(workouts)
         message_to_channel = "Here's how we're doing so far this week! :thinking:\n\n" + leaderboard + "\nGreat work everyone! :heart:"
+        No_leaderboard_message_to_channel = "Here's how we're doing so far this week! :thinking:\n\n https://media.tenor.com/VPT2-nyi42cAAAAd/what-happened-where-is-everyone.gif"
+        
+        if leaderboard == "":
+            message_to_channel = No_leaderboard_message_to_channel
+        
         print(message_to_channel)
         await message.channel.send(message_to_channel)
+        
+    """
+    Used to redue the tracker if the bot was not running Monday morning to automaticly do it
+    """
+    if message.content == "!LastWeekTracker":
+        today = datetime.now() + timedelta(days=365)
+        workouts = await get_tracker_information(client, message.channel, today)
+        leaderboard = construct_leaderboard(workouts)
+        message_to_channel = "Here's what we did last week! :thinking:\n\n" + leaderboard + "\nGreat work everyone! :heart:"
+        
+        No_leaderboard_message_to_channel = "Here's what we did last week! :thinking:\n\n https://media.tenor.com/VPT2-nyi42cAAAAd/what-happened-where-is-everyone.gif"
+        
+        if leaderboard == "":
+            message_to_channel = No_leaderboard_message_to_channel
+        
+        print(message_to_channel)
+        await message.channel.send(message_to_channel)
+
+    """
+    Used to make a summary of the past year
+    """
+    if message.content == "!YearlyWrapup":
+        datestart = datetime.now() + relativedelta(weekday=MO(-53))
+        workouts = await get_tracker_info_for_range(client, message.channel, datestart, datetime.now())
+        leaderboard = construct_leaderboard(workouts)
+        message_to_channel = "Here's what we did last year! :thinking:\n\n" + leaderboard + "\nGreat work everyone! :heart:"
+        
+        No_leaderboard_message_to_channel = "Here's what we did last year! :thinking:\n\n https://media.tenor.com/VPT2-nyi42cAAAAd/what-happened-where-is-everyone.gif"
+        
+        if leaderboard == "":
+            message_to_channel = No_leaderboard_message_to_channel
+        
+        print(message_to_channel)
+        await message.channel.send(message_to_channel)
+
 
 
 async def get_local_server_nickname(message, client):
@@ -136,6 +179,11 @@ async def weekly_tracker(client, channel):
             workout_results = construct_leaderboard(workouts)
             message_to_channel += workout_results
             message_to_channel += "\nKeep up the great work, everyone!\n:fire::fire::fire::fire::fire::fire::fire:"
+            
+            No_leaderboard_message_to_channel = "Hey, it's a new week! Let's see how we did!\n\n https://media.tenor.com/VPT2-nyi42cAAAAd/what-happened-where-is-everyone.gif"
+            if workout_results == "":
+                message_to_channel = No_leaderboard_message_to_channel
+                
             print(message_to_channel)
             await channel.send(message_to_channel)
         await asyncio.sleep(3600) # check time every 3 hours
@@ -168,6 +216,33 @@ async def get_tracker_information(client, channel, input_date):
         
     return workouts
 
+async def get_tracker_info_for_range(client, channel, input_date1, input_date2):
+    """
+    Populates a dictionary called "workouts".
+    Tracks all the checkins we've seen from every user over the past week.
+    In order to display this correctly, we need to go out and get the server nickname for every user we see.
+    Then we map the server nicknames back to the universal Discord names so we can find checkins easily.
+    """
+    workouts = {}
+    usernames = {}
+    input_date1 = input_date1.replace(hour=0, minute=0, second=0)
+    input_date2 = input_date2.replace(hour=0, minute=0, second=0)
+    after_date = input_date1
+    until_date = input_date2 - timedelta(seconds=1)
+    print(f"Getting !checkins from between {after_date} and {until_date}")
+    async for m in channel.history(after=after_date, before=until_date, limit=None):
+        # usernames dictionary is used to map the universal discord name to the local server nickname
+        # so we can display things using names that people are expecting to see :)
+        if m.author.name not in usernames:
+            local_server_nickname = await get_local_server_nickname(m, client)
+            usernames[m.author.name] = local_server_nickname if local_server_nickname else m.author.name
+        if "!checkin" in m.content.lower():
+            if usernames[m.author.name] in workouts:
+                workouts[usernames[m.author.name]] += 1
+            else:
+                workouts[usernames[m.author.name]] = 1
+        
+    return workouts
 
 def construct_leaderboard(workout_dict):
     """
