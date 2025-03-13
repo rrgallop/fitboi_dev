@@ -22,7 +22,6 @@ async def on_ready():
     print(f'{client.user} has connected to Discord!')
     for guild in client.guilds:
         for c in guild.text_channels:
-#            print(f"- {c.name} - {c.guild.name} -") #debug
             if c.name == "🏋︱fitness" and c.guild.name == "The Nerds":
                 fitness_channel = c
                 active_channels.add(fitness_channel)
